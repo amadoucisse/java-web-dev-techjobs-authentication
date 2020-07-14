@@ -1,5 +1,17 @@
 # Welcome to TechJobs Authentication
 
+> Note: Is it me or are there things here that are also called "java-web-dev-techjobs-persistent" even though we are working with "java-web-dev-techjobs-authentication"?
+>   * Nope, turns out this project must have been forked form "persistent". Someone forgot to update the `settings.gradle` file and change 
+>   ```
+>   rootProject.name = 'java-web-dev-techjobs-persistent'
+>   ```
+>   to
+>   ```
+>   rootProject.name = 'java-web-dev-techjobs-authentication'
+>   ```
+>   Update that. Thing should be resolved, hopefully.
+>   In that case, it might be worth working on "persistent" and "authentication" at the same time. At least for their respective first parts that require setup.
+
 If you are reading this, congratulations! You are almost at the end of the Java Unit...or you still have TechJobs Persistent to work on.
 
 Either way, there are four parts to this Studio.
