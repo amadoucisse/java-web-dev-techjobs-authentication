@@ -8,16 +8,14 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class WebApplicationConfig implements WebMvcConfigurer {
 
-    // Create a Spring-managed object to allow the app to access our filter
     @Bean
-    public AuthenticationFilter authenticationFilter(){
+    public AuthenticationFilter authenticationFilter() {
         return new AuthenticationFilter();
     }
-
-    // Register filter with the Spring container
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         registry.addInterceptor(authenticationFilter());
     }
+
 }

@@ -19,129 +19,112 @@ import java.util.Optional;
 
 @Controller
 public class AuthenticationController {
+
     @Autowired
-    UserRepository userRepo;
+    UserRepository userRepository;
 
-    private static final String userSessionKey = "user";    // TODO: Make sure this is the right value.
+    private static final String userSessionKey = "user";
 
-    public User getUserFromSession(HttpSession session){
+    @GetMapping("/register")
+    public String displayRegistrationForm(Model model) {
+        model.addAttribute(new RegisterFormDTO());
+        model.addAttribute("title", "Register");
+        return "register";
+    }
+
+    @PostMapping("/register")
+    public String processRegistrationForm(@ModelAttribute @Valid RegisterFormDTO registerFormDTO,
+                                          Errors errors, HttpServletRequest request, Model model) {
+
+        if (errors.hasErrors()) {
+            model.addAttribute("title", "Register");
+            return "register";
+        }
+
+        User existingUser = userRepository.findByUsername(registerFormDTO.getUsername());
+
+        if (existingUser != null) {
+            errors.rejectValue("username", "username.alreadyexists", "A user with that username already exists");
+            model.addAttribute("title", "Register");
+            return "register";
+        }
+
+        String password = registerFormDTO.getPassword();
+        String verifyPassword = registerFormDTO.getVerifyPassword();
+        if (!password.equals(verifyPassword)) {
+            errors.rejectValue("password", "passwords.mismatch", "Passwords do not match");
+            model.addAttribute("title", "Register");
+            return "register";
+        }
+
+        User newUser = new User(registerFormDTO.getUsername(), registerFormDTO.getPassword());
+        userRepository.save(newUser);
+        setUserInSession(request.getSession(), newUser);
+
+        return "redirect:";
+    }
+
+    @GetMapping("/login")
+    public String displayLoginForm(Model model) {
+        model.addAttribute(new LoginFormDTO());
+        model.addAttribute("title", "Log In");
+        return "login";
+    }
+
+    @PostMapping("/login")
+    public String processLoginForm(@ModelAttribute @Valid LoginFormDTO loginFormDTO,
+                                   Errors errors, HttpServletRequest request,
+                                   Model model) {
+
+        if (errors.hasErrors()) {
+            model.addAttribute("title", "Log In");
+            return "login";
+        }
+
+        User theUser = userRepository.findByUsername(loginFormDTO.getUsername());
+
+        if (theUser == null) {
+            errors.rejectValue("username", "user.invalid", "The given username does not exist");
+            model.addAttribute("title", "Log In");
+            return "login";
+        }
+
+        String password = loginFormDTO.getPassword();
+
+        if (!theUser.isMatchingPassword(password)) {
+            errors.rejectValue("password", "password.invalid", "Invalid password");
+            model.addAttribute("title", "Log In");
+            return "login";
+        }
+
+        setUserInSession(request.getSession(), theUser);
+
+        return "redirect:";
+    }
+
+    @GetMapping("/logout")
+    public String logout(HttpServletRequest request) {
+        request.getSession().invalidate();
+        return "redirect:/login";
+    }
+
+    public User getUserFromSession(HttpSession session) {
         Integer userId = (Integer) session.getAttribute(userSessionKey);
-        if(userId == null){
+        if (userId == null) {
             return null;
         }
 
-        Optional<User> user = userRepo.findById(userId);
+        Optional<User> user = userRepository.findById(userId);
 
-        if(user.isEmpty()){
+        if (user.isEmpty()) {
             return null;
         }
 
         return user.get();
     }
 
-    // NOTE: Back in coding_events, this was set private. What would happen if I set it public? (Would this compromise security?)
-    public static void setUserInSession(HttpSession session, User user){
+    private static void setUserInSession(HttpSession session, User user) {
         session.setAttribute(userSessionKey, user.getId());
     }
 
-    // NOTE: as much as it drives me nuts, we'll say "display" instead of "render" in this studio
-
-    @GetMapping("/register")
-    public String displayRegistrationForm(Model model){
-        model.addAttribute(new RegisterFormDTO());
-        // model.addAttribute("title","Register");  // TODO: Do we still have a model attribute?
-        return "register";
-    }
-
-    @PostMapping("/register")
-    public String processRegistrationForm(
-            @ModelAttribute @Valid RegisterFormDTO registerFormDTO,
-            Errors errors,
-            HttpServletRequest req,
-            Model model
-    ){
-        if(errors.hasErrors()){
-            //model.addAttribute("title","Register");
-            return "register";
-        }
-
-        User existingUser = userRepo.findUserByUsername(registerFormDTO.getUsername());
-        if(existingUser != null){
-            errors.rejectValue(
-                    "username",
-                    "username.alreadyexists",
-                    "Sorry, that username already exists. Pick something else and try again."
-            );
-            //model.addAttribute("title","Register");
-            return "register";
-        }
-
-        String password       = registerFormDTO.getPassword();
-        String verifyPassword = registerFormDTO.getVerifyPassword();
-        if(!password.equals(verifyPassword)){
-            errors.rejectValue(
-                    "password",
-                    "password.mismatch",
-                    "Sorry, the passwords don't match. Try entering them in again."
-            );
-            //model.addAttribute("title","Register");
-            return "register";
-        }
-
-        User newUser = new User(registerFormDTO.getUsername(),registerFormDTO.getPassword());   // create new user
-        userRepo.save(newUser);                                                                 // save user to the database
-        setUserInSession(req.getSession(),newUser);                                               // create new user session
-        return "redirect:";                                                                     // redirect to the homepage
-    }
-
-    @GetMapping("/login")
-    public String displayLoginForm(Model model){
-        model.addAttribute(new LoginFormDTO());
-        //model.addAttribute("title","Log In");
-        return "login";
-    }
-
-    @PostMapping("/login")
-    public String processLoginForm(
-            @ModelAttribute @Valid LoginFormDTO loginFormDTO,
-            Errors errors,
-            HttpServletRequest req,
-            Model model
-    ){
-        if(errors.hasErrors()){
-            //model.addAttribute("title","Log In");
-            return "login";
-        }
-
-        User theUser = userRepo.findUserByUsername(loginFormDTO.getUsername());
-        if(theUser == null){
-            errors.rejectValue(
-                    "username",
-                    "user.invalid",
-                    "Sorry, that user does not exist."
-            );
-            //model.addAttribute("title","Log In");
-            return "login";
-        }
-
-        String password = loginFormDTO.getPassword();
-        if(!theUser.isMatchingPassword(password)){
-            errors.rejectValue(
-                    "password",
-                    "password.invalid",
-                    "Invalid password. Try again."
-            );
-            //model.addAttribute("title","Log In");
-            return "login";
-        }
-
-        setUserInSession(req.getSession(),theUser);
-        return "redirect:";
-    }
-
-    @GetMapping("/logout")
-    public String logout(HttpServletRequest req){
-        req.getSession().invalidate();
-        return "redirect:/login";
-    }
 }

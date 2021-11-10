@@ -6,11 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import javax.transaction.Transactional;
 
-/*
- * TODO: Move the data package up one level?
- * TODO: Do we still need the @Transactional annotation?
- */
-
 @Repository
 @Transactional
 public interface JobRepository extends CrudRepository<Job, Integer> {
